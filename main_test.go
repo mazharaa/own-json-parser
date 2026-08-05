@@ -12,7 +12,17 @@ func TestValidJSON(t *testing.T) {
 		want		bool
 	} {
 		{"step1 invalid", "testdata/step1/invalid.json", false},
+		{"step1 invalid2", "testdata/step1/invalid2.json", false},
+		{"step1 invalid3", "testdata/step1/invalid3.json", false},
+		{"step1 invalid4", "testdata/step1/invalid4.json", false},
+		{"step1 invalid5", "testdata/step1/invalid5.json", false},
+		{"step1 invalid6", "testdata/step1/invalid6.json", false},
+		{"step1 invalid7", "testdata/step1/invalid7.json", false},
 		{"step1 valid", "testdata/step1/valid.json", true},
+		{"step1 valid2", "testdata/step1/valid2.json", true},
+		{"step1 valid3", "testdata/step1/valid3.json", true},
+		{"step1 valid4", "testdata/step1/valid4.json", true},
+		{"step1 valid5", "testdata/step1/valid5.json", true},
 		// {"step2 invalid", "testdata/step2/invalid.json", false},
 		// {"step2 invalid2", "testdata/step2/invalid2.json", false},
 		// {"step2 valid", "testdata/step2/valid.json", true},
