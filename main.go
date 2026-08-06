@@ -8,32 +8,47 @@ import (
 )
 
 func parseJSON(data []byte) bool {
-	foundFirstCurl := false
-	foundPair := false
+	pos := 0
 
-	for i:=range data {
-		if string(data[i]) == " " {
-			continue
-		} else if string(data[i]) == "{" {
-			if !foundFirstCurl {
-				foundFirstCurl = true
-				continue
-			} else if foundPair{
-				foundPair = false
-				continue
-			}
-		} else if string(data[i]) == "}" {
-			if foundPair{
-				return false
-			} else if foundFirstCurl {
-				foundPair = true
-				continue
-			}
-		} else {
+	if len(data) > 1 {
+		// fmt.Println(data[pos:])
+
+		skipWhiteSpace(data[pos:], &pos)
+
+		if !expect(data, &pos, '{') {
 			return false
 		}
+
+		skipWhiteSpace(data[pos:], &pos)
+
+		if !expect(data, &pos, '}') {
+			return false
+		}
+
+		skipWhiteSpace(data[pos:], &pos)
+
+		return pos == len(data)
+	} else {
+		return false
 	}
-	return foundPair
+}
+
+func skipWhiteSpace(input []byte, pos *int) {
+	for _, value :=range input {
+		if value == byte('\t') || value == byte('\n') || value == byte('\r') || value == byte(' '){
+			*pos ++
+		} else {
+			break
+		}
+	}
+}
+
+func expect(input []byte, pos *int, char byte) bool {
+	if *pos >= len(input) || input[*pos] != char {
+		return false
+	}
+	*pos ++
+	return true
 }
 
 func main() {
