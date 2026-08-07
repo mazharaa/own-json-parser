@@ -11,7 +11,6 @@ func parseJSON(data []byte) bool {
 	pos := 0
 
 	if len(data) > 1 {
-		// fmt.Println(data[pos:])
 
 		skipWhiteSpace(data[pos:], &pos)
 
@@ -22,7 +21,55 @@ func parseJSON(data []byte) bool {
 		skipWhiteSpace(data[pos:], &pos)
 
 		if !expect(data, &pos, '}') {
-			return false
+			for {
+				skipWhiteSpace(data[pos:], &pos)
+
+				if !expect(data, &pos, '"') {
+					return false
+				}
+
+				skipChars(data, &pos)
+
+				if !expect(data, &pos, '"') {
+					return false
+				}
+
+				skipWhiteSpace(data[pos:], &pos)
+
+				if !expect(data, &pos, ':') {
+					return false
+				}
+
+				skipWhiteSpace(data[pos:], &pos)
+
+				if !expect(data, &pos, '"') {
+					return false
+				}
+
+				skipChars(data, &pos)
+
+				if !expect(data, &pos, '"') {
+					return false
+				}
+
+				skipWhiteSpace(data[pos:], &pos)
+
+				if pos >= len(data) {
+					return false
+				}
+
+				if data[pos] != byte(',') {
+					break
+				} else {
+					pos ++
+				}
+			}
+
+			skipWhiteSpace(data[pos:], &pos)
+
+			if !expect(data, &pos, '}') {
+				return false
+			}
 		}
 
 		skipWhiteSpace(data[pos:], &pos)
@@ -39,6 +86,25 @@ func skipWhiteSpace(input []byte, pos *int) {
 			*pos ++
 		} else {
 			break
+		}
+	}
+}
+
+func skipChars(input []byte, pos *int) {
+	for *pos < len(input) {
+		if input[*pos] == '"' {
+			break
+		} else if input[*pos] == '\\' {
+			*pos ++
+			if *pos >= len(input) {
+				break
+			}
+			if input[*pos] == 'u' {
+				*pos += 4
+			}
+			*pos ++
+		} else {
+			*pos ++
 		}
 	}
 }
