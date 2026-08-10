@@ -12,17 +12,17 @@ func parseJSON(data []byte) bool {
 
 	if len(data) > 1 {
 
-		skipWhiteSpace(data[pos:], &pos)
+		skipWhiteSpace(data, &pos)
 
 		if !expect(data, &pos, '{') {
 			return false
 		}
 
-		skipWhiteSpace(data[pos:], &pos)
+		skipWhiteSpace(data, &pos)
 
 		if !expect(data, &pos, '}') {
 			for {
-				skipWhiteSpace(data[pos:], &pos)
+				skipWhiteSpace(data, &pos)
 
 				if !expect(data, &pos, '"') {
 					return false
@@ -34,13 +34,13 @@ func parseJSON(data []byte) bool {
 					return false
 				}
 
-				skipWhiteSpace(data[pos:], &pos)
+				skipWhiteSpace(data, &pos)
 
 				if !expect(data, &pos, ':') {
 					return false
 				}
 
-				skipWhiteSpace(data[pos:], &pos)
+				skipWhiteSpace(data, &pos)
 
 				if !expect(data, &pos, '"') {
 					if data[pos] == byte('t') || data[pos] == byte('f') || data[pos] == byte('n') {
@@ -60,7 +60,7 @@ func parseJSON(data []byte) bool {
 					}
 				}
 
-				skipWhiteSpace(data[pos:], &pos)
+				skipWhiteSpace(data, &pos)
 
 				if pos >= len(data) {
 					return false
@@ -73,14 +73,14 @@ func parseJSON(data []byte) bool {
 				}
 			}
 
-			skipWhiteSpace(data[pos:], &pos)
+			skipWhiteSpace(data, &pos)
 
 			if !expect(data, &pos, '}') {
 				return false
 			}
 		}
 
-		skipWhiteSpace(data[pos:], &pos)
+		skipWhiteSpace(data, &pos)
 
 		return pos == len(data)
 	} else {
@@ -89,7 +89,7 @@ func parseJSON(data []byte) bool {
 }
 
 func skipWhiteSpace(input []byte, pos *int) {
-	for _, value :=range input {
+	for _, value :=range input[*pos:] {
 		if value == byte('\t') || value == byte('\n') || value == byte('\r') || value == byte(' '){
 			*pos ++
 		} else {
@@ -193,7 +193,7 @@ func parseNum(input []byte, pos *int, firstElement byte) bool {
 			}
 
 			*pos++
-		} else if input[*pos] == byte(',') || input[*pos] == byte('}') || input[*pos] == byte('\n') {
+		} else if input[*pos] == byte(',') || input[*pos] == byte('}') {
 			if input[*pos - 1] == byte('.') || input[*pos - 1] == byte('e') || input[*pos - 1] == byte('E') || input[*pos - 1] == byte('-') || input[*pos - 1] == byte('+') {
 				return false
 			}
@@ -204,7 +204,7 @@ func parseNum(input []byte, pos *int, firstElement byte) bool {
 			}
 			*pos ++
 		} else  {
-			return false
+			skipWhiteSpace(input, pos)
 		}
 	}
 
