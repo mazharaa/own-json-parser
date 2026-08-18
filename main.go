@@ -7,82 +7,68 @@ import (
 	"os"
 )
 
-func parseJSON(data []byte) bool {
-	pos := 0
+func parseJSON(data []byte, pos *int) bool {
 
 	if len(data) > 1 {
 
-		skipWhiteSpace(data, &pos)
+		skipWhiteSpace(data, pos)
 
-		if !expect(data, &pos, '{') {
+		if !expect(data, pos, '{') {
 			return false
 		}
 
-		skipWhiteSpace(data, &pos)
+		skipWhiteSpace(data, pos)
 
-		if !expect(data, &pos, '}') {
+		if !expect(data, pos, '}') {
 			for {
-				skipWhiteSpace(data, &pos)
+				skipWhiteSpace(data, pos)
 
-				if !expect(data, &pos, '"') {
+				if !expect(data, pos, '"') {
 					return false
 				}
 
-				skipChars(data, &pos)
-
-				if !expect(data, &pos, '"') {
+				if !skipChars(data, pos) {
 					return false
 				}
 
-				skipWhiteSpace(data, &pos)
-
-				if !expect(data, &pos, ':') {
+				if !expect(data, pos, '"') {
 					return false
 				}
 
-				skipWhiteSpace(data, &pos)
+				skipWhiteSpace(data, pos)
 
-				if !expect(data, &pos, '"') {
-					if data[pos] == byte('t') || data[pos] == byte('f') || data[pos] == byte('n') {
-						if !keywordTypeMatch(data, &pos, data[pos]) {
-							return false
-						}
-					} else {
-						if !parseNum(data, &pos, data[pos]) {
-							return false
-						}
-					}
-				} else {
-					skipChars(data, &pos)
-
-					if !expect(data, &pos, '"') {
-						return false
-					}
-				}
-
-				skipWhiteSpace(data, &pos)
-
-				if pos >= len(data) {
+				if !expect(data, pos, ':') {
 					return false
 				}
 
-				if data[pos] != byte(',') {
+				if !parseValue(data, pos) {
+					return false
+				}
+
+				skipWhiteSpace(data, pos)
+
+				if *pos >= len(data) {
+					return false
+				}
+
+				if data[*pos] != byte(',') {
 					break
 				} else {
-					pos ++
+					*pos ++
 				}
 			}
 
-			skipWhiteSpace(data, &pos)
+			skipWhiteSpace(data, pos)
 
-			if !expect(data, &pos, '}') {
+			if !expect(data, pos, '}') {
 				return false
 			}
 		}
 
-		skipWhiteSpace(data, &pos)
+		skipWhiteSpace(data, pos)
 
-		return pos == len(data)
+		// return *pos == len(data)
+		return true
 	} else {
 		return false
 	}
@@ -98,16 +84,34 @@ func skipWhiteSpace(input []byte, pos *int) {
 	}
 }
 
-func skipChars(input []byte, pos *int) {
+func isValidEscape(b byte) bool {
+	switch b {
+	case '"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u':
+		return true
+	}
+	return false
+}
+
+func isHexDigit(b byte) bool {
+	return (b >= '0' && b <= '9') || (b >= 'A' && b <= 'F') || (b >= 'a' && b <= 'f')
+}
+
+func skipChars(input []byte, pos *int) bool {
 	for *pos < len(input) {
 		if input[*pos] == '"' {
 			break
+		} else if input[*pos] == 0x9 || input[*pos] == 0xa{
+			return false
 		} else if input[*pos] == '\\' {
 			*pos ++
-			if *pos >= len(input) {
-				break
-			}
+			if *pos >= len(input) {return false}
+			if !isValidEscape(input[*pos]) {return false}
+
 			if input[*pos] == 'u' {
+				if *pos + 4 >= len(input) {return false}
+				for i := 1; i <= 4; i++ {
+					if !isHexDigit(input[*pos+i]) {return false}
+				}
 				*pos += 4
 			}
 			*pos ++
@@ -115,6 +119,8 @@ func skipChars(input []byte, pos *int) {
 			*pos ++
 		}
 	}
+
+	return true
 }
 
 func expect(input []byte, pos *int, char byte) bool {
@@ -193,7 +199,7 @@ func parseNum(input []byte, pos *int, firstElement byte) bool {
 			}
 
 			*pos++
-		} else if input[*pos] == byte(',') || input[*pos] == byte('}') {
+		} else if input[*pos] == byte(',') || input[*pos] == byte('}') || input[*pos] == byte(']') {
 			if input[*pos - 1] == byte('.') || input[*pos - 1] == byte('e') || input[*pos - 1] == byte('E') || input[*pos - 1] == byte('-') || input[*pos - 1] == byte('+') {
 				return false
 			}
@@ -204,11 +210,103 @@ func parseNum(input []byte, pos *int, firstElement byte) bool {
 			}
 			*pos ++
 		} else  {
-			skipWhiteSpace(input, pos)
+			break
 		}
 	}
 
 	return true
+}
+
+func parseArray(input []byte, pos *int) bool {
+	// if !skipChars(input, pos) {
+	// 	return false
+	// }
+
+	if !expect(input, pos, '[') {
+		return false
+	}
+
+	skipWhiteSpace(input, pos)
+
+	if expect(input, pos, ']') {
+		return true
+	}
+
+	for {
+		if !parseValue(input, pos) {
+			return false
+		}
+
+		skipWhiteSpace(input, pos)
+
+		if expect(input, pos, ',') {
+			continue
+		}
+		break
+	}
+
+	return expect(input, pos, ']')
+}
+
+func parseValue(data []byte, pos *int) bool {
+	skipWhiteSpace(data, pos)
+
+	if *pos >= len(data) {
+		return false
+	}
+
+	switch data[*pos] {
+	case '"':
+		return parseString(data, pos)
+	case 't', 'f', 'n':
+		return keywordTypeMatch(data, pos, data[*pos])
+	case '{':
+		return parseJSON(data, pos)
+	case '[':
+		return parseArray(data, pos)
+	default:
+		return parseNum(data, pos, data[*pos])
+	}
+}
+
+func validJSONPos(data []byte) (bool, int) {
+	pos := 0
+
+	skipWhiteSpace(data, &pos)
+
+	if pos >= len(data) {
+		return false, pos
+	}
+
+	switch data[pos] {
+	case '{':
+		return parseJSON(data, &pos) && pos == len(data), pos
+	case '[':
+		return parseArray(data, &pos) && pos == len(data), pos
+	case '"':
+		return parseString(data, &pos) && pos == len(data), pos
+	case 't', 'f', 'n':
+		return keywordTypeMatch(data, &pos, data[pos]) && pos == len(data), pos
+	default:
+		return parseNum(data, &pos, data[pos]) && pos == len(data), pos
+	}
+}
+
+func validJSON(data []byte) bool {
+	valid, _ := validJSONPos(data)
+	return valid
+}
+
+func parseString(data []byte, pos *int) bool {
+	if !expect(data, pos, '"') {
+		return false
+	}
+
+	if !skipChars(data, pos) {
+		return false
+	}
+
+	return expect(data, pos, '"')
 }
 
 func main() {
@@ -225,7 +323,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if parseJSON(data) {
+	if validJSON(data) {
 		fmt.Println("Valid JSON")
 		os.Exit(0)
 	} else {
