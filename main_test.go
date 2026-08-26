@@ -119,9 +119,17 @@ func TestValidJSON(t *testing.T) {
 		{"edge fail31", "testdata/edge/fail31.json", false},
 		{"edge fail32", "testdata/edge/fail32.json", false},
 		{"edge fail33", "testdata/edge/fail33.json", false},
+		{"edge fail34", "testdata/edge/fail34.json", true},
+		{"edge fail35", "testdata/edge/fail35.json", false},
 		{"edge pass1", "testdata/edge/pass1.json", true},
 		{"edge pass2", "testdata/edge/pass2.json", true},
 		{"edge pass3", "testdata/edge/pass3.json", true},
+		{"reg invalid-top-level-neg-leading-zero", "testdata/edge/invalid-top-level-neg-leading-zero.json", false},
+		{"reg valid-top-level-neg-zero", "testdata/edge/valid-top-level-neg-zero.json", true},
+		{"reg invalid-bare-minus", "testdata/edge/invalid-bare-minus.json", false},
+		{"reg valid-neg-zero-in-object", "testdata/edge/valid-neg-zero-in-object.json", true},
+		{"reg valid-neg-zero-fraction", "testdata/edge/valid-neg-zero-fraction.json", true},
+		{"reg invalid-raw-control-0x0b", "testdata/edge/invalid-raw-control-0x0b.json", false},
 	}
 
 	for _, tt := range tests {

@@ -100,7 +100,9 @@ func skipChars(input []byte, pos *int) bool {
 	for *pos < len(input) {
 		if input[*pos] == '"' {
 			break
-		} else if input[*pos] == 0x9 || input[*pos] == 0xa{
+		} else if input[*pos] < 0x1f {
+			return false
+		} else if input[*pos] == 0x9 || input[*pos] == 0xa {
 			return false
 		} else if input[*pos] == '\\' {
 			*pos ++
@@ -176,7 +178,19 @@ func parseNum(input []byte, pos *int, firstElement byte) bool {
 		if !firstElementChecked {
 			if (input[*pos] == byte('-')) || (input[*pos] >= byte('0') && input[*pos] <= byte('9')) {
 				*pos ++
+
 				firstElementChecked = true
+
+				if firstElement == byte('-') {
+					// *pos is now on the first digit after '-'
+					if *pos >= len(input) || input[*pos] < '0' || input[*pos] > '9' {
+						return false // '-' must be followed by a digit
+					}
+					// reject "-0" followed by another digit (e.g. "-01")
+					if input[*pos] == '0' && *pos+1 < len(input) && input[*pos+1] >= '0' && input[*pos+1] <= '9' {
+						return false
+					}
+				}
 			} else {
 				return false
 			}
@@ -218,10 +232,6 @@ func parseNum(input []byte, pos *int, firstElement byte) bool {
 }
 
 func parseArray(input []byte, pos *int) bool {
-	// if !skipChars(input, pos) {
-	// 	return false
-	// }
-
 	if !expect(input, pos, '[') {
 		return false
 	}
